@@ -16,5 +16,18 @@
     "bugs": {
         "url": "https://github.com/Toddez/storage-backend/issues"
     },
-    "homepage": "https://github.com/Toddez/storage-backend#readme"
+    "homepage": "https://github.com/Toddez/storage-backend#readme",
+    "devDependencies": {
+        "eslint": "^7.13.0",
+        "nodemon": "^2.0.6",
+        "webpack": "^5.4.0",
+        "webpack-cli": "^4.2.0",
+        "webpack-node-externals": "^2.5.2"
+    },
+    "dependencies": {
+        "cors": "^2.8.5",
+        "dotenv": "^8.2.0",
+        "express": "^4.17.1",
+        "morgan": "^1.10.0"
+    }
 }
