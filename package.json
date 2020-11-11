@@ -1,0 +1,20 @@
+{
+    "name": "storage-backend",
+    "version": "1.0.0",
+    "description": "",
+    "main": "server.js",
+    "scripts": {
+        "start": "nodemon server.js",
+        "test": "exit 0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Toddez/storage-backend.git"
+    },
+    "author": "Toddez",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/Toddez/storage-backend/issues"
+    },
+    "homepage": "https://github.com/Toddez/storage-backend#readme"
+}
