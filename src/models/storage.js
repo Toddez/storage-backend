@@ -1,12 +1,29 @@
 const fs = require('fs');
 const path = require('path');
 
-class NodeType {}
-NodeType.NULL = 'UNKNOWN';
-NodeType.ROOT = 'ROOT';
-NodeType.DIR = 'DIR';
-NodeType.FILE = 'FILE';
-NodeType.CRAWABLE = [NodeType.ROOT, NodeType.DIR];
+const BIT = (...x) => {
+    let res = 0x0;
+
+    for (const y of x) {
+        res |= 0x1 << y;
+    }
+
+    return res;
+};
+
+const NodeType = {
+    NULL:       BIT(),
+
+    ROOT:       BIT(0),
+    DIR:        BIT(1),
+    CRAWLABLE:  BIT(0, 1),
+
+    RAW:        BIT(2),
+    IMAGE:      BIT(3),
+    VIDEO:      BIT(4),
+    TEXT:       BIT(5),
+    FILE:       BIT(2, 3, 4, 5)
+};
 
 class Node {
     constructor(type, parent, localPath) {
@@ -32,7 +49,7 @@ class Storage {
 
     async crawl(node) {
         return new Promise((resolveAll) => {
-            if (NodeType.CRAWABLE.includes(node.type)) {
+            if (node.type & NodeType.CRAWLABLE) {
                 fs.readdir(this.path(node.localPath), async (err, files) => {
                     if (!err) {
                         let promises = [];
