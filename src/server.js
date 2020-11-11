@@ -51,8 +51,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-const server = app.listen(port, () => {
+app.listen(port, () => {
     console.log(`API listening on port ${port}`);
 });
 
-export default server;
