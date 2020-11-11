@@ -4,7 +4,8 @@
     "description": "",
     "main": "server.js",
     "scripts": {
-        "watch": "webpack --watch & nodemon dist/bundle.js --exec \"npm run lint\"",
+        "watch": "webpack --watch & nodemon dist/bundle.js --exec \"npm run lint && npm run start\"",
+        "start": "node dist/bundle.js",
         "build": "PRODUCTION=1 webpack",
         "test": "exit 0",
         "posttest": "npm run lint",
