@@ -38,7 +38,7 @@ class Node {
 
 class Storage {
     constructor(id, key) {
-        this.root = new Node(NodeType.ROOT, null, id);
+        this.root = new Node(NodeType.ROOT | NodeType.DIR, null, id);
         this.key = key;
         this.crawled = false;
     }
