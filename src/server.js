@@ -24,9 +24,11 @@ app.use(bodyParser.urlencoded({ extended:  true })); // application/x-www-form-u
 
 // Import routes
 import auth from './routes/auth';
+import storage from './routes/storage';
 
 // Use routes
 app.use('/', auth);
+app.use('/storage', storage);
 
 // If no route found
 app.use((req, res, next) => {
