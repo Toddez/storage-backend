@@ -4,10 +4,11 @@
     "description": "",
     "main": "server.js",
     "scripts": {
-        "watch": "webpack --watch & nodemon dist/bundle.js",
-        "build": "webpack",
+        "watch": "webpack --watch & nodemon dist/bundle.js --exec \"npm run lint\"",
+        "build": "PRODUCTION=1 webpack",
         "test": "exit 0",
-        "posttest": "eslint ."
+        "posttest": "npm run lint",
+        "lint": "eslint ."
     },
     "repository": {
         "type": "git",
