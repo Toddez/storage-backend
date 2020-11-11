@@ -4,8 +4,10 @@
     "description": "",
     "main": "server.js",
     "scripts": {
-        "start": "nodemon server.js",
-        "test": "exit 0"
+        "watch": "webpack --watch & nodemon dist/bundle.js",
+        "build": "webpack",
+        "test": "exit 0",
+        "posttest": "eslint ."
     },
     "repository": {
         "type": "git",
