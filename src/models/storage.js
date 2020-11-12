@@ -177,8 +177,13 @@ class Storage {
 
         const {dir, file} = this.deepPath(localPath);
 
-        await fs.mkdir(dir, { recursive: true }, () => null);
-        await fs.writeFile(file, this.encrypt(data), () => null);
+        return new Promise((resolve) => {
+            fs.mkdir(dir, { recursive: true }, () => {
+                fs.writeFile(file, this.encrypt(data), () => {
+                    resolve();
+                });
+            });
+        });
     }
 
     async readFile(localPath) {
@@ -187,8 +192,13 @@ class Storage {
 
         const {file} = this.deepPath(localPath);
 
-        await fs.readFile(file, (err, data) => {
-            return this.decrypt(data.toString('utf8')).toString('utf8');
+        return new Promise((resolve) => {
+            fs.readFile(file, (err, data) => {
+                if (!data)
+                    return '';
+
+                resolve(this.decrypt(data.toString('utf8')).toString('utf8'));
+            });
         });
     }
 }
