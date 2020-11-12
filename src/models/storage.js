@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
+import { aesEncrypt, aesDecrypt, sha256 } from './crpyto';
+
 const BIT = (...x) => {
     let res = 0x0;
 
@@ -30,17 +32,24 @@ class Node {
         this.children = [];
         this.type = type;
         this.localPath = localPath;
+        this.data = {};
+        this.parent = parent;
 
-        if (parent)
-            parent.children.push(this);
+        if (this.type & NodeType.ROOT)
+            this.data.resolvedPath = 'root';
+
+        if (this.parent)
+            this.parent.children.push(this);
     }
 }
 
 class Storage {
     constructor(id, key) {
-        this.root = new Node(NodeType.ROOT | NodeType.DIR, null, id);
+        this.root = new Node(NodeType.ROOT | NodeType.DIR, null, sha256(id));
         this.key = key;
         this.crawled = false;
+        this.crawling = false;
+        this.crawlPromise = null;
     }
 
     path(localPath) {
@@ -66,6 +75,12 @@ class Storage {
                                             type = NodeType.FILE;
 
                                         const newNode = new Node(type, node, `${node.localPath}/${file}`);
+                                        const fileName = await this.decrypt(file).toString('utf8');
+
+                                        newNode.data.resolvedPath = `${node.data.resolvedPath}/${fileName}`;
+                                        if (type & NodeType.FILE)
+                                            newNode.data.file = fileName;
+
                                         await this.crawl(newNode);
 
                                         resolve();
@@ -85,19 +100,97 @@ class Storage {
     }
 
     async tree() {
-        if (this.crawled) {
-            return this.root;
-        }
+        if (this.crawling)
+            return this.crawlPromise;
 
-        return new Promise((resolve) => {
-            fs.mkdir(this.path(), { recursive: true }, async () => {
+        if (this.crawled)
+            return this.root;
+
+        this.crawling = true;
+
+        this.crawlPromise = new Promise((resolve) => {
+            fs.mkdir(this.path(this.root.localPath), { recursive: true }, async () => {
                 await this.crawl(this.root);
                 this.crawled = true;
+                this.crawling = false;
+                this.crawlPromise = null;
                 resolve(this.root);
             });
         });
 
+        return this.crawlPromise;
+    }
+
+    async export(node) {
+        if (!this.crawled)
+            await this.tree();
+
+        const out = {};
+        out.type = node.type;
+        out.file = node.data.file;
+        out.path = node.data.resolvedPath;
+        out.children = [];
+
+        for (const child of node.children) {
+            const newChild = await this.export(child);
+            out.children.push(newChild);
+        }
+
+        return out;
+    }
+
+    encrypt(str) {
+        return aesEncrypt(str, this.key);
+    }
+
+    decrypt(str) {
+        return aesDecrypt(str, this.key);
+    }
+
+    find(node, localPath) {
+        for (const child of node.children)
+            if (localPath.startsWith(child.data.resolvedPath))
+                return this.find(child, localPath);
+
+        return node.localPath;
+    }
+
+    deepPath(localPath) {
+        const deepestPath = this.find(this.root, `${this.root.data.resolvedPath}/${localPath}`);
+        const depth = deepestPath.split('/').length;
+
+        const split = localPath.split('/');
+        const encryptedPath = split.slice(depth - 1, split.length + 1).map((bit) => this.encrypt(bit));
+
+        const dirPath = this.path([deepestPath, ...encryptedPath.slice(0, -1)].join('/'));
+        const fullPath = this.path([deepestPath, ...encryptedPath].join('/'));
+
+        return {
+            dir: dirPath,
+            file: fullPath
+        };
+    }
+
+    async writeFile(localPath, data) {
+        if (!this.crawled)
+            await this.tree();
+
+        const {dir, file} = this.deepPath(localPath);
+
+        await fs.mkdir(dir, { recursive: true }, () => null);
+        await fs.writeFile(file, this.encrypt(data), () => null);
+    }
+
+    async readFile(localPath) {
+        if (!this.crawled)
+            await this.tree();
+
+        const {file} = this.deepPath(localPath);
+
+        await fs.readFile(file, (err, data) => {
+            return this.decrypt(data.toString('utf8')).toString('utf8');
+        });
     }
 }
 
-export { Storage };
+export { Storage, NodeType };
