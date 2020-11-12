@@ -8,7 +8,7 @@ const bcrypt = require('bcryptjs');
 const saltrounds = 10;
 const jwtSecret = process.env.JWT_SECRET || 'No-secret';
 
-import { sha256 } from '../models/hash';
+import { sha256 } from '../models/crpyto';
 
 const checkToken = (req, res, next) => {
     const token = req.headers['x-access-token'];
