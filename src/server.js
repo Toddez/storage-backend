@@ -43,6 +43,11 @@ app.use((err, req, res, next) => {
         return next(err);
     }
 
+    if (!err.status) {
+        err = new Error('Internal server error');
+        err.status = 500;
+    }
+
     res.status(err.status || 500).json({
         errors: [
             {
