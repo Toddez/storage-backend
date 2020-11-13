@@ -43,6 +43,20 @@ class Node {
     }
 }
 
+const deleteFolderRecursive = function(localPath) {
+    if (fs.existsSync(localPath)) {
+        fs.readdirSync(localPath).forEach((file) => {
+            const curPath = path.join(localPath, file);
+            if (fs.lstatSync(curPath).isDirectory()) {
+                deleteFolderRecursive(curPath);
+            } else {
+                fs.unlinkSync(curPath);
+            }
+        });
+        fs.rmdirSync(localPath);
+    }
+};
+
 class Storage {
     constructor(id, key) {
         this.root = new Node(NodeType.ROOT | NodeType.DIR, null, sha256(id));
@@ -152,11 +166,11 @@ class Storage {
             if (localPath.startsWith(child.data.resolvedPath))
                 return this.find(child, localPath);
 
-        return node.localPath;
+        return node;
     }
 
     deepPath(localPath) {
-        const deepestPath = this.find(this.root, `${this.root.data.resolvedPath}/${localPath}`);
+        const deepestPath = this.find(this.root, `${this.root.data.resolvedPath}/${localPath}`).localPath;
         const depth = deepestPath.split('/').length;
 
         const split = localPath.split('/');
@@ -212,6 +226,30 @@ class Storage {
 
                 resolve(this.decrypt(data.toString('utf8')).toString('utf8'));
             });
+        });
+    }
+
+    async delete(localPath) {
+        if (!this.crawled)
+            await this.tree();
+
+        return new Promise((resolve) => {
+            let node = this.find(this.root, `${this.root.data.resolvedPath}/${localPath}`);
+
+            if ('root/' + localPath !== node.data.resolvedPath) {
+                resolve(false);
+                return;
+            }
+
+            const fullPath = this.path(node.localPath);
+
+            if (node.type & NodeType.DIR) {
+                deleteFolderRecursive(fullPath);
+            } else if (node.type & NodeType.FILE) {
+                fs.unlinkSync(fullPath);
+            }
+
+            resolve(true);
         });
     }
 }
