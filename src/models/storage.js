@@ -43,7 +43,7 @@ const Extensions = {
     [NodeType.GIF]: ['gif'],
     [NodeType.MP4]: ['mp4'],
     [NodeType.WMV]: ['wmv'],
-    [NodeType.BINARY]: ['', 'out', 'bin'],
+    [NodeType.BINARY]: [''],
 };
 
 const getExtension = (fileName) => {
