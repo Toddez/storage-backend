@@ -52,7 +52,7 @@ router.post('/write/*', async (req, res, next) => {
         return next(err);
     }
 
-    return res.status(200).json({
+    return res.status(201).json({
         path: localPath
     });
 });
@@ -66,7 +66,7 @@ router.post('/delete/*', async (req, res) => {
     const storage = new Storage(id, key);
     const deleted = await storage.delete(localPath);
 
-    return res.status(200).json({
+    return res.status(201).json({
         deleted: deleted
     });
 });
