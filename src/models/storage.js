@@ -20,11 +20,46 @@ const NodeType = {
     DIR:        BIT(1),
     CRAWLABLE:  BIT(0, 1),
 
-    RAW:        BIT(2),
-    IMAGE:      BIT(3),
-    VIDEO:      BIT(4),
-    TEXT:       BIT(5),
-    FILE:       BIT(2, 3, 4, 5)
+    BINARY:     BIT(2),
+    RAW:        BIT(3),
+
+    PNG:        BIT(4),
+    JPG:        BIT(5),
+    GIF:        BIT(6),
+    IMAGE:      BIT(4, 5, 6),
+
+    MP4:        BIT(7),
+    WMV:        BIT(8),
+    VIDEO:      BIT(7, 8),
+
+    UNKNOWN:    BIT(9),
+    FILE:       BIT(2, 3, 4, 5, 6, 7, 8, 9)
+};
+
+const Extensions = {
+    [NodeType.RAW]: ['txt', 'md', 'js', 'jsx', 'ts', 'tsx'],
+    [NodeType.PNG]: ['png'],
+    [NodeType.JPG]: ['jpg', 'jpeg'],
+    [NodeType.GIF]: ['gif'],
+    [NodeType.MP4]: ['mp4'],
+    [NodeType.WMV]: ['wmv'],
+    [NodeType.BINARY]: ['', 'out', 'bin'],
+};
+
+const getExtension = (fileName) => {
+    const fileParts = fileName.split('.');
+    return (fileParts.length > 1 ? fileParts[fileParts.length - 1] : '').toLowerCase();
+};
+
+const identify = (ext) => {
+    for (const type of Object.keys(Extensions)) {
+        for (const ending of Extensions[type]) {
+            if (ending === ext)
+                return type;
+        }
+    }
+
+    return NodeType.UNKNOWN;
 };
 
 class Node {
@@ -85,15 +120,18 @@ class Storage {
                                         if (stat.isDirectory())
                                             type = NodeType.DIR;
 
+                                        const fileName = await this.decrypt(file).toString('utf8');
+                                        const extension = getExtension(fileName);
+
                                         if (stat.isFile())
-                                            type = NodeType.FILE;
+                                            type = identify(extension);
 
                                         const newNode = new Node(type, node, `${node.localPath}/${file}`);
-                                        const fileName = await this.decrypt(file).toString('utf8');
-
                                         newNode.data.resolvedPath = `${node.data.resolvedPath}/${fileName}`;
-                                        if (type & NodeType.FILE)
+                                        if (type & NodeType.FILE) {
                                             newNode.data.file = fileName;
+                                            newNode.data.extension = extension;
+                                        }
 
                                         await this.crawl(newNode);
 
@@ -142,6 +180,7 @@ class Storage {
         const out = {};
         out.type = node.type;
         out.file = node.data.file;
+        out.extension = node.data.extension;
         out.path = node.data.resolvedPath;
         out.children = [];
 
@@ -253,4 +292,4 @@ class Storage {
     }
 }
 
-export { Storage, NodeType };
+export { Storage, NodeType, getExtension, identify };

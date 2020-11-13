@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-import { Storage, NodeType } from '../models/storage';
+import { Storage, NodeType, getExtension, identify } from '../models/storage';
 
 router.get('/', async (req, res) => {
     const user = req.user;
@@ -24,11 +24,18 @@ router.get('/read/*', async (req, res) => {
 
     const storage = new Storage(id, key);
 
-    let data = await storage.readFile(localPath);
+    const pathParts = localPath.split('/');
+    const fileName = pathParts[pathParts.length - 1];
+    const extension = getExtension(fileName);
+    const data = await storage.readFile(localPath);
 
     return res.status(200).json({
         path: localPath,
-        data: data
+        file: fileName,
+        extension: extension,
+        type: identify(extension),
+        data: data,
+        types: NodeType
     });
 });
 
