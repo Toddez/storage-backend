@@ -243,11 +243,10 @@ class Storage {
 
             const fullPath = this.path(node.localPath);
 
-            if (node.type & NodeType.DIR) {
+            if (node.type & NodeType.DIR)
                 deleteFolderRecursive(fullPath);
-            } else if (node.type & NodeType.FILE) {
+            else if (node.type & NodeType.FILE)
                 fs.unlinkSync(fullPath);
-            }
 
             resolve(true);
         });
