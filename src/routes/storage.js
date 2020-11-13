@@ -28,8 +28,7 @@ router.get('/read/*', async (req, res) => {
 
     return res.status(200).json({
         path: localPath,
-        data: data,
-        types: NodeType
+        data: data
     });
 });
 
@@ -54,8 +53,21 @@ router.post('/write/*', async (req, res, next) => {
     }
 
     return res.status(200).json({
-        path: localPath,
-        types: NodeType
+        path: localPath
+    });
+});
+
+router.post('/delete/*', async (req, res) => {
+    const user = req.user;
+    const localPath = req.params[0];
+    const id = user.id;
+    const key = user.key;
+
+    const storage = new Storage(id, key);
+    const deleted = await storage.delete(localPath);
+
+    return res.status(200).json({
+        deleted: deleted
     });
 });
 
