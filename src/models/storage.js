@@ -171,11 +171,24 @@ class Storage {
         };
     }
 
+    async createDir(localPath) {
+        if (!this.crawled)
+            await this.tree();
+
+        const { file } = this.deepPath(localPath);
+
+        return new Promise((resolve) => {
+            fs.mkdir(file, { recursive: true }, () => {
+                resolve();
+            });
+        });
+    }
+
     async writeFile(localPath, data) {
         if (!this.crawled)
             await this.tree();
 
-        const {dir, file} = this.deepPath(localPath);
+        const { dir, file } = this.deepPath(localPath);
 
         return new Promise((resolve) => {
             fs.mkdir(dir, { recursive: true }, () => {
@@ -190,7 +203,7 @@ class Storage {
         if (!this.crawled)
             await this.tree();
 
-        const {file} = this.deepPath(localPath);
+        const { file } = this.deepPath(localPath);
 
         return new Promise((resolve) => {
             fs.readFile(file, (err, data) => {
