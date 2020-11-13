@@ -202,7 +202,8 @@ class Storage {
 
     find(node, localPath) {
         for (const child of node.children)
-            if (localPath.startsWith(child.data.resolvedPath))
+            if (child.type & NodeType.FILE && localPath === child.data.resolvedPath ||
+                child.type & NodeType.CRAWLABLE && localPath.startsWith(child.data.resolvedPath))
                 return this.find(child, localPath);
 
         return node;
