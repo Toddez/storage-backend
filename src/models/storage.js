@@ -55,7 +55,7 @@ const identify = (ext) => {
     for (const type of Object.keys(Extensions)) {
         for (const ending of Extensions[type]) {
             if (ending === ext)
-                return type;
+                return parseInt(type);
         }
     }
 
@@ -200,24 +200,48 @@ class Storage {
         return aesDecrypt(str, this.key);
     }
 
-    find(node, localPath) {
-        for (const child of node.children)
+    find(node, localPath, type, depth=0) {
+        for (const child of node.children) {
+            const cmppath = localPath.split('/');
+            const bmppath = cmppath.slice(depth, cmppath.length).join('/') + '/';
+            console.log(bmppath, child.data.resolvedPath);
             if (child.type & NodeType.FILE && localPath === child.data.resolvedPath ||
-                child.type & NodeType.CRAWLABLE && localPath.startsWith(child.data.resolvedPath))
-                return this.find(child, localPath);
+                child.type & NodeType.CRAWLABLE && bmppath.startsWith(child.data.resolvedPath + '/'))
+                return this.find(child, localPath, type, depth + 1);
+        }
 
-        return node;
+        if (node.type & type)
+            return node;
+        else if (node === this.root)
+            return node;
+        else {
+            return null;
+        }
     }
 
-    deepPath(localPath) {
-        const deepestPath = this.find(this.root, `${this.root.data.resolvedPath}/${localPath}`).localPath;
-        const depth = deepestPath.split('/').length;
+    deepPath(localPath, type) {
+        const deepestNode = this.find(this.root, `${this.root.data.resolvedPath}/${localPath}`, type);
+        if (!deepestNode)
+            return null;
 
-        const split = localPath.split('/');
-        const encryptedPath = split.slice(depth - 1, split.length + 1).map((bit) => this.encrypt(bit));
+        const deepestPath = deepestNode.localPath;
+        const depth = deepestPath.split('/').length - 1;
 
-        const dirPath = this.path([deepestPath, ...encryptedPath.slice(0, -1)].join('/'));
-        const fullPath = this.path([deepestPath, ...encryptedPath].join('/'));
+        let dirPath, fullPath;
+        if (depth === localPath.split('/').length) {
+            if (deepestNode === this.root)
+                dirPath = this.path(deepestNode.localPath);
+            else
+                dirPath = this.path(deepestNode.parent.localPath);
+
+            fullPath = this.path(deepestNode.localPath);
+        } else {
+            const split = localPath.split('/');
+            const encryptedPath = split.slice(depth - 1, split.length + 1).map((bit) => this.encrypt(bit));
+
+            dirPath = this.path([deepestPath, ...encryptedPath.slice(0, -1)].join('/'));
+            fullPath = this.path([deepestPath, ...encryptedPath].join('/'));
+        }
 
         return {
             dir: dirPath,
@@ -229,10 +253,12 @@ class Storage {
         if (!this.crawled)
             await this.tree();
 
-        const { file } = this.deepPath(localPath);
+        const search = this.deepPath(localPath, NodeType.CRAWLABLE);
+        if (!search)
+            return null;
 
         return new Promise((resolve) => {
-            fs.mkdir(file, { recursive: true }, () => {
+            fs.mkdir(search.file, { recursive: true }, () => {
                 resolve();
             });
         });
@@ -242,12 +268,14 @@ class Storage {
         if (!this.crawled)
             await this.tree();
 
-        const { dir, file } = this.deepPath(localPath);
+        const search = this.deepPath(localPath, NodeType.FILE);
+        if (!search)
+            return false;
 
         return new Promise((resolve) => {
-            fs.mkdir(dir, { recursive: true }, () => {
-                fs.writeFile(file, this.encrypt(data), () => {
-                    resolve();
+            fs.mkdir(search.dir, { recursive: true }, () => {
+                fs.writeFile(search.file, this.encrypt(data), () => {
+                    resolve(true);
                 });
             });
         });

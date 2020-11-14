@@ -51,11 +51,16 @@ router.post('/write/*', async (req, res, next) => {
 
     const storage = new Storage(id, key);
 
-    if (type & NodeType.FILE)
-        await storage.writeFile(localPath, data);
-    else if (type & NodeType.DIR)
-        await storage.createDir(localPath);
-    else {
+    let err = new Error('Path collision');
+    err.status = 400;
+
+    if (type & NodeType.FILE) {
+        if (!await storage.writeFile(localPath, data))
+            return next(err);
+    } else if (type & NodeType.DIR) {
+        if (!await storage.createDir(localPath))
+            return next(err);
+    }else {
         let err = new Error('Invalid type');
         err.status = 400;
         return next(err);
