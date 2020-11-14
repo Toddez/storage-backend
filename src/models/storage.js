@@ -94,88 +94,55 @@ const deleteFolderRecursive = function(localPath) {
 
 class Storage {
     constructor(id, key) {
-        this.root = new Node(NodeType.ROOT | NodeType.DIR, null, sha256(id));
+        this.id = id;
         this.key = key;
-        this.crawled = false;
-        this.crawling = false;
-        this.crawlPromise = null;
+        this.root = new Node(NodeType.ROOT | NodeType.DIR, null, sha256(this.id));
     }
 
     path(localPath) {
         return path.resolve(__dirname, `storage/${localPath || ''}`);
     }
 
-    async crawl(node) {
-        return new Promise((resolveAll) => {
-            if (node.type & NodeType.CRAWLABLE) {
-                fs.readdir(this.path(node.localPath), async (err, files) => {
-                    if (!err) {
-                        let promises = [];
-                        for (const file of files) {
-                            promises.push(new Promise((resolve) => {
-                                fs.stat(this.path(`${node.localPath}/${file}`), async (err, stat) => {
-                                    if (!err) {
-                                        let type = NodeType.NULL;
+    crawl(node) {
+        if (node.type & NodeType.CRAWLABLE) {
+            const files = fs.readdirSync(this.path(node.localPath));
+            for (const file of files) {
+                const stat = fs.statSync(this.path(`${node.localPath}/${file}`));
 
-                                        if (stat.isDirectory())
-                                            type = NodeType.DIR;
+                let type = NodeType.NULL;
 
-                                        const fileName = await this.decrypt(file).toString('utf8');
-                                        const extension = getExtension(fileName);
+                if (stat.isDirectory())
+                    type = NodeType.DIR;
 
-                                        if (stat.isFile())
-                                            type = identify(extension);
+                const fileName = this.decrypt(file).toString('utf8');
+                const extension = getExtension(fileName);
 
-                                        const newNode = new Node(type, node, `${node.localPath}/${file}`);
-                                        newNode.data.resolvedPath = `${node.data.resolvedPath}/${fileName}`;
-                                        if (type & NodeType.FILE) {
-                                            newNode.data.file = fileName;
-                                            newNode.data.extension = extension;
-                                        }
+                if (stat.isFile())
+                    type = identify(extension);
 
-                                        await this.crawl(newNode);
+                const newNode = new Node(type, node, `${node.localPath}/${file}`);
+                newNode.data.resolvedPath = `${node.data.resolvedPath}/${fileName}`;
+                if (type & NodeType.FILE) {
+                    newNode.data.file = fileName;
+                    newNode.data.extension = extension;
+                }
 
-                                        resolve();
-                                    }
-                                });
-                            }));
-                        }
-
-                        await Promise.all(promises);
-                        resolveAll();
-                    }
-                });
-            } else {
-                resolveAll();
+                this.crawl(newNode);
             }
-        });
+        }
     }
 
-    async tree() {
-        if (this.crawling)
-            return this.crawlPromise;
-
-        if (this.crawled)
-            return this.root;
-
-        this.crawling = true;
-
-        this.crawlPromise = new Promise((resolve) => {
-            fs.mkdir(this.path(this.root.localPath), { recursive: true }, async () => {
-                await this.crawl(this.root);
-                this.crawled = true;
-                this.crawling = false;
-                this.crawlPromise = null;
-                resolve(this.root);
-            });
-        });
-
-        return this.crawlPromise;
+    tree() {
+        this.root = new Node(NodeType.ROOT | NodeType.DIR, null, sha256(this.id));
+        fs.mkdirSync(this.path(this.root.localPath), { recursive: true });
+        this.crawl(this.root);
     }
 
-    async export(node) {
-        if (!this.crawled)
-            await this.tree();
+    export(node, first=true) {
+        if (first) {
+            this.tree();
+            node = this.root;
+        }
 
         const out = {};
         out.type = node.type;
@@ -185,7 +152,7 @@ class Storage {
         out.children = [];
 
         for (const child of node.children) {
-            const newChild = await this.export(child);
+            const newChild = this.export(child, false);
             out.children.push(newChild);
         }
 
@@ -200,126 +167,97 @@ class Storage {
         return aesDecrypt(str, this.key);
     }
 
-    find(node, localPath, type, depth=0) {
+    find(node, localPath, depth=0) {
         for (const child of node.children) {
-            const spl = localPath.split('/');
-            const compare = spl.slice(depth, spl.length).join('/') + '/';
+            const current = localPath.split('/')[depth];
+            const compare = child.data.resolvedPath.split('/')[1 + depth];
 
-            if (child.type & NodeType.FILE && localPath === child.data.resolvedPath ||
-                child.type & NodeType.CRAWLABLE && compare.startsWith(child.data.resolvedPath + '/'))
-                return this.find(child, localPath, type, depth + 1);
+            if (current === compare)
+                return this.find(child, localPath, depth + 1);
         }
 
-        if (node.type & type)
-            return node;
-        else if (node === this.root)
-            return node;
-        else {
-            return null;
+        return node;
+    }
+
+    createDir(localPath) {
+        this.tree();
+
+        if (localPath[localPath.length - 1] === '/')
+            localPath = localPath.slice(0, -1);
+
+        const deepest = this.find(this.root, localPath);
+        const depth = deepest.data.resolvedPath.split('/').length - 1;
+        const spl = localPath.split('/');
+        const resolvedPath = [deepest.localPath, ...spl.slice(depth, spl.length).map((bit) => this.encrypt(bit))].join('/');
+
+        try {
+            fs.mkdirSync(this.path(resolvedPath), { recursive: true });
+            return true;
+        } catch (err) {
+            return false;
         }
     }
 
-    deepPath(localPath, type) {
-        const deepestNode = this.find(this.root, `${this.root.data.resolvedPath}/${localPath}`, type);
-        if (!deepestNode)
-            return null;
+    writeFile(localPath, data) {
+        const spl = localPath.split('/');
+        if (spl.length > 1) {
+            if (!this.createDir(spl.slice(0, -1).join('/')))
+                return false;
 
-        const deepestPath = deepestNode.localPath;
-        const depth = deepestPath.split('/').length - 1;
-
-        let dirPath, fullPath;
-        if (depth === localPath.split('/').length) {
-            if (deepestNode === this.root)
-                dirPath = this.path(deepestNode.localPath);
-            else
-                dirPath = this.path(deepestNode.parent.localPath);
-
-            fullPath = this.path(deepestNode.localPath);
-        } else {
-            const split = localPath.split('/');
-            const encryptedPath = split.slice(depth - 1, split.length + 1).map((bit) => this.encrypt(bit));
-
-            dirPath = this.path([deepestPath, ...encryptedPath.slice(0, -1)].join('/'));
-            fullPath = this.path([deepestPath, ...encryptedPath].join('/'));
+            this.tree();
         }
 
-        return {
-            dir: dirPath,
-            file: fullPath
-        };
+        this.tree();
+
+        const deepest = this.find(this.root, localPath);
+        const depth = deepest.data.resolvedPath.split('/').length - 1;
+        const resolvedPath = [deepest.localPath, ...spl.slice(depth, spl.length).map((bit) => this.encrypt(bit))].join('/');
+
+        try {
+            fs.writeFileSync(this.path(resolvedPath), this.encrypt(data));
+            return true;
+        } catch (err) {
+            return false;
+        }
     }
 
-    async createDir(localPath) {
-        if (!this.crawled)
-            await this.tree();
+    readFile(localPath) {
+        this.tree();
 
-        const search = this.deepPath(localPath, NodeType.CRAWLABLE);
-        if (!search)
-            return null;
+        const deepest = this.find(this.root, localPath);
 
-        return new Promise((resolve) => {
-            fs.mkdir(search.file, { recursive: true }, () => {
-                resolve();
-            });
-        });
+        console.log('root/' + localPath, deepest.data.resolvedPath);
+
+        if (('root/' + localPath) !== deepest.data.resolvedPath)
+            return '';
+
+        try {
+            return this.decrypt(fs.readFileSync(this.path(deepest.localPath)).toString('utf8')).toString('utf8');
+        } catch (err) {
+            return '';
+        }
     }
 
-    async writeFile(localPath, data) {
-        if (!this.crawled)
-            await this.tree();
+    delete(localPath) {
+        this.tree();
 
-        const search = this.deepPath(localPath, NodeType.FILE);
-        if (!search)
+        const deepest = this.find(this.root, localPath);
+
+        if ('root/' + localPath !== deepest.data.resolvedPath)
             return false;
 
-        return new Promise((resolve) => {
-            fs.mkdir(search.dir, { recursive: true }, () => {
-                fs.writeFile(search.file, this.encrypt(data), () => {
-                    resolve(true);
-                });
-            });
-        });
-    }
+        const fullPath = this.path(deepest.localPath);
 
-    async readFile(localPath) {
-        if (!this.crawled)
-            await this.tree();
-
-        const search = this.deepPath(localPath, NodeType.FILE);
-        if (!search)
-            return 'failed to read file...';
-
-        return new Promise((resolve) => {
-            fs.readFile(search.file, (err, data) => {
-                if (!data)
-                    return '';
-
-                resolve(this.decrypt(data.toString('utf8')).toString('utf8'));
-            });
-        });
-    }
-
-    async delete(localPath) {
-        if (!this.crawled)
-            await this.tree();
-
-        return new Promise((resolve) => {
-            let node = this.find(this.root, `${this.root.data.resolvedPath}/${localPath}`);
-
-            if ('root/' + localPath !== node.data.resolvedPath) {
-                resolve(false);
-                return;
-            }
-
-            const fullPath = this.path(node.localPath);
-
-            if (node.type & NodeType.DIR)
+        try {
+            if (deepest.type & NodeType.DIR)
                 deleteFolderRecursive(fullPath);
-            else if (node.type & NodeType.FILE)
+            else if (deepest.type & NodeType.FILE)
                 fs.unlinkSync(fullPath);
 
-            resolve(true);
-        });
+            return true;
+        } catch (err) {
+            return false;
+        }
     }
 }
 

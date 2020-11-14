@@ -3,7 +3,7 @@ const router = express.Router();
 
 import { Storage, NodeType, getExtension, identify } from '../models/storage';
 
-router.get('/', async (req, res) => {
+router.get('/', (req, res) => {
     const user = req.user;
     const id = user.id;
     const key = user.key;
@@ -11,7 +11,7 @@ router.get('/', async (req, res) => {
     const storage = new Storage(id, key);
 
     return res.status(200).json({
-        tree: await storage.export(storage.root),
+        tree: storage.export(),
         types: NodeType
     });
 });
@@ -27,7 +27,7 @@ router.get('/read/*', async (req, res) => {
     const pathParts = localPath.split('/');
     const fileName = pathParts[pathParts.length - 1];
     const extension = getExtension(fileName);
-    const data = await storage.readFile(localPath);
+    const data = storage.readFile(localPath);
 
     return res.status(200).json({
         path: localPath,
@@ -51,14 +51,14 @@ router.post('/write/*', async (req, res, next) => {
 
     const storage = new Storage(id, key);
 
-    let err = new Error('Path collision');
+    let err = new Error('Could not write file');
     err.status = 400;
 
     if (type & NodeType.FILE) {
-        if (!await storage.writeFile(localPath, data))
+        if (!storage.writeFile(localPath, data))
             return next(err);
     } else if (type & NodeType.DIR) {
-        if (!await storage.createDir(localPath))
+        if (!storage.createDir(localPath))
             return next(err);
     }else {
         let err = new Error('Invalid type');
@@ -78,7 +78,7 @@ router.post('/delete/*', async (req, res) => {
     const key = user.key;
 
     const storage = new Storage(id, key);
-    const deleted = await storage.delete(localPath);
+    const deleted = storage.delete(localPath);
 
     return res.status(201).json({
         deleted: deleted
