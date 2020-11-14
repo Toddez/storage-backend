@@ -226,8 +226,6 @@ class Storage {
 
         const deepest = this.find(this.root, localPath);
 
-        console.log('root/' + localPath, deepest.data.resolvedPath);
-
         if (('root/' + localPath) !== deepest.data.resolvedPath)
             return '';
 
