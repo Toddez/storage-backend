@@ -202,11 +202,11 @@ class Storage {
 
     find(node, localPath, type, depth=0) {
         for (const child of node.children) {
-            const cmppath = localPath.split('/');
-            const bmppath = cmppath.slice(depth, cmppath.length).join('/') + '/';
-            console.log(bmppath, child.data.resolvedPath);
+            const spl = localPath.split('/');
+            const compare = spl.slice(depth, spl.length).join('/') + '/';
+
             if (child.type & NodeType.FILE && localPath === child.data.resolvedPath ||
-                child.type & NodeType.CRAWLABLE && bmppath.startsWith(child.data.resolvedPath + '/'))
+                child.type & NodeType.CRAWLABLE && compare.startsWith(child.data.resolvedPath + '/'))
                 return this.find(child, localPath, type, depth + 1);
         }
 
