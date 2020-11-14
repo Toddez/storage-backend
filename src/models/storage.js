@@ -285,10 +285,12 @@ class Storage {
         if (!this.crawled)
             await this.tree();
 
-        const { file } = this.deepPath(localPath);
+        const search = this.deepPath(localPath, NodeType.FILE);
+        if (!search)
+            return 'failed to read file...';
 
         return new Promise((resolve) => {
-            fs.readFile(file, (err, data) => {
+            fs.readFile(search.file, (err, data) => {
                 if (!data)
                     return '';
 
