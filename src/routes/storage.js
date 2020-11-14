@@ -35,6 +35,8 @@ router.get('/read/*', async (req, res) => {
         extension: extension,
         type: identify(extension),
         data: data,
+        lines: data.split('\n').length,
+        size: (new TextEncoder().encode(data)).length,
         types: NodeType
     });
 });
