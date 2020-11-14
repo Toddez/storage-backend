@@ -37,7 +37,7 @@ const NodeType = {
 };
 
 const Extensions = {
-    [NodeType.RAW]: ['txt', 'md', 'js', 'jsx', 'ts', 'tsx'],
+    [NodeType.RAW]: ['js', 'jsx', 'ts', 'tsx'],
     [NodeType.PNG]: ['png'],
     [NodeType.JPG]: ['jpg', 'jpeg'],
     [NodeType.GIF]: ['gif'],
