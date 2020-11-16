@@ -85,4 +85,19 @@ router.post('/delete/*', async (req, res) => {
     });
 });
 
+router.post('/rename/*', async (req, res) => {
+    const user = req.user;
+    const localPath = req.params[0];
+    const id = user.id;
+    const key = user.key;
+    const name = req.body.name;
+
+    const storage = new Storage(id, key);
+    const renamed = storage.rename(localPath, name);
+
+    return res.status(201).json({
+        renamed: renamed
+    });
+});
+
 export default router;
