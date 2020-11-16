@@ -257,6 +257,41 @@ class Storage {
             return false;
         }
     }
+
+    rename(localPath, name) {
+        this.tree();
+
+        const deepestPrevious = this.find(this.root, localPath);
+
+        if ('root/' + localPath !== deepestPrevious.data.resolvedPath)
+            return false;
+
+        const previousPath = this.path(deepestPrevious.localPath);
+
+        let targetPath = localPath.split('/').slice(0, -1);
+        targetPath.push(name);
+        targetPath = targetPath.join('/');
+
+        const spl = targetPath.split('/');
+        if (spl.length > 1) {
+            if (!this.createDir(spl.slice(0, -1).join('/')))
+                return false;
+
+            this.tree();
+        }
+
+        const deepestTarget = this.find(this.root, name);
+        const depth = deepestTarget.data.resolvedPath.split('/').length - 1;
+        const resolvedPath = this.path([deepestTarget.localPath, ...spl.slice(depth, spl.length).map((bit) => this.encrypt(bit))].join('/'));
+
+        try {
+            fs.renameSync(previousPath, resolvedPath);
+
+            return true;
+        } catch (err) {
+            return false;
+        }
+    }
 }
 
 export { Storage, NodeType, getExtension, identify };
