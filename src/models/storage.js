@@ -280,7 +280,7 @@ class Storage {
             this.tree();
         }
 
-        const deepestTarget = this.find(this.root, name);
+        const deepestTarget = this.find(this.root, targetPath);
         const depth = deepestTarget.data.resolvedPath.split('/').length - 1;
         const resolvedPath = this.path([deepestTarget.localPath, ...spl.slice(depth, spl.length).map((bit) => this.encrypt(bit))].join('/'));
 
