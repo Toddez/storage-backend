@@ -3,7 +3,6 @@ Database.connect();
 
 const express = require('express');
 const cors = require('cors');
-const morgan = require('morgan');
 const bodyParser = require('body-parser');
 
 require('dotenv').config();
@@ -13,10 +12,6 @@ const app = express();
 const port = process.env.HTTP_PORT || 1337;
 
 app.use(cors());
-
-// Log unless running tests
-if (process.env.NODE_ENV !== 'test')
-    app.use(morgan('combined'));
 
 // Bodyparser
 app.use(bodyParser.json()); // application/json
