@@ -37,7 +37,7 @@ const NodeType = {
 };
 
 const Extensions = {
-    [NodeType.RAW]: ['js', 'jsx', 'ts', 'tsx'],
+    [NodeType.RAW]: ['abap', 'actionscript', 'ada', 'arduino', 'autoit', 'c', 'clojure', 'cs', 'c', 'cpp', 'coffeescript', 'csharp', 'css', 'cuda', 'd', 'dart', 'delph', 'elixir', 'elm', 'erlang', 'fortran', 'foxpro', 'fsharp', 'go', 'graphql', 'gql', 'groovy', 'haskell', 'haxe', 'html', 'java',' javascript', 'json', 'julia', 'jsx', 'js', 'kotlin', 'latex', 'lisp', 'livescript', 'lua', 'mathematica', 'makefile', 'matlab', 'objectivec', 'objective', 'objectpascal', 'ocaml', 'octave', 'perl', 'php', 'powershell', 'prolog', 'puppet', 'python', 'qml', 'r', 'racket', 'restructuredtext', 'rest', 'ruby', 'rust', 'sass', 'less',' scala', 'scheme', 'shell', 'smalltalk', 'sql', 'standardml', 'sml', 'swift', 'tcl', 'tex', 'text', 'tsx', 'ts', 'typescript', 'vala', 'vbnet', 'verilog', 'vhdl', 'xml', 'xquery'],
     [NodeType.PNG]: ['png'],
     [NodeType.JPG]: ['jpg', 'jpeg'],
     [NodeType.GIF]: ['gif'],
