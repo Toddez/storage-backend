@@ -72,6 +72,30 @@ router.post('/write/*', async (req, res, next) => {
     });
 });
 
+const multer = require('multer');
+const upload = multer();
+
+router.post('/upload/*', upload.array('files'), async (req, res, next) => {
+    const user = req.user;
+    const localPath = req.params[0];
+    const files = req.files;
+    const id = user.id;
+    const key = user.key;
+
+    const storage = new Storage(id, key);
+
+    let err = new Error('Could not upload file');
+    err.status = 400;
+
+    for (const file of files)
+        if (!storage.writeFile(`${localPath}${localPath !== '' ? '/' : ''}${file.originalname}`, file.buffer.toString('utf-8')))
+            return next(err);
+
+    return res.status(201).json({
+        uploaded: true
+    });
+});
+
 router.post('/delete/*', async (req, res) => {
     const user = req.user;
     const localPath = req.params[0];
