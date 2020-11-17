@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { TextEncoder } = require('util');
 
 import { Storage, NodeType, getExtension, identify } from '../models/storage';
 
