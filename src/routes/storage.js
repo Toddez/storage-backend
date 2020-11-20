@@ -28,7 +28,13 @@ router.get('/read/*', async (req, res) => {
     const pathParts = localPath.split('/');
     const fileName = pathParts[pathParts.length - 1];
     const extension = getExtension(fileName);
-    const data = storage.readFile(localPath);
+    let data = Buffer.from(storage.readFile(localPath));
+
+    if (!(identify(extension) & NodeType.IMAGE || identify(extension) & NodeType.VIDEO)) {
+        data = data.toString('utf8');
+    } else {
+        data = data.toString('base64');
+    }
 
     return res.status(200).json({
         path: localPath,
@@ -36,8 +42,8 @@ router.get('/read/*', async (req, res) => {
         extension: extension,
         type: identify(extension),
         data: data,
-        lines: data.split('\n').length,
-        size: (new TextEncoder().encode(data)).length,
+        lines: data.toString('utf8').split('\n').length,
+        size: (new TextEncoder().encode(data.toString('utf8'))).length,
         types: NodeType
     });
 });
@@ -88,7 +94,7 @@ router.post('/upload/*', upload.array('files'), async (req, res, next) => {
     err.status = 400;
 
     for (const file of files)
-        if (!storage.writeFile(`${localPath}${localPath !== '' ? '/' : ''}${file.originalname}`, file.buffer.toString('utf-8')))
+        if (!storage.writeFile(`${localPath}${localPath !== '' ? '/' : ''}${file.originalname}`, file.buffer))
             return next(err);
 
     return res.status(201).json({

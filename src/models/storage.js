@@ -230,7 +230,7 @@ class Storage {
             return '';
 
         try {
-            return this.decrypt(fs.readFileSync(this.path(deepest.localPath)).toString('utf8')).toString('utf8');
+            return this.decrypt(fs.readFileSync(this.path(deepest.localPath)).toString('utf8'));
         } catch (err) {
             return '';
         }
