@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { TextEncoder } = require('util');
+const fetch = require('node-fetch');
 
 import { Storage, NodeType, getExtension, identify } from '../models/storage';
 
@@ -99,6 +100,30 @@ router.post('/upload/*', upload.array('files'), async (req, res, next) => {
 
     return res.status(201).json({
         uploaded: true
+    });
+});
+
+router.post('/uploadFromURL/*', async (req, res, next) => {
+    const user = req.user;
+    const localPath = req.params[0];
+    const url = req.body.url;
+    const id = user.id;
+    const key = user.key;
+
+    const storage = new Storage(id, key);
+
+    const fileRes = await fetch(url);
+    const data = await fileRes.buffer();
+    const fileName = url.split('/').pop();
+
+    let err = new Error('Could not write file');
+    err.status = 400;
+
+    if (!storage.writeFile(`${localPath}${localPath !== '' ? '/' : ''}${fileName}`, data))
+        return next(err);
+
+    return res.status(201).json({
+        path: localPath
     });
 });
 
