@@ -99,6 +99,28 @@ class Storage {
         this.root = new Node(NodeType.ROOT | NodeType.DIR, null, sha256(this.id));
     }
 
+    resolvePath(path) {
+        const split = path.split('/');
+        for (let i = 0; i < split.length; i++) {
+            if (split[i] === '..') {
+                if (i > 0) {
+                    split.splice(i - 1, 1);
+                    i--;
+                }
+
+                split.splice(i, 1);
+                i--;
+            }
+
+            if (split[i] === '.') {
+                split.splice(i, 1);
+                i--;
+            }
+        }
+
+        return split.join('/');
+    }
+
     path(localPath) {
         return path.resolve(__dirname, `storage/${localPath || ''}`);
     }
@@ -271,6 +293,8 @@ class Storage {
         let targetPath = localPath.split('/').slice(0, -1);
         targetPath.push(name);
         targetPath = targetPath.join('/');
+
+        targetPath = this.resolvePath(targetPath);
 
         const spl = targetPath.split('/');
         if (spl.length > 1) {
