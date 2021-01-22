@@ -3,6 +3,12 @@ import Database from '../db';
 const express = require('express');
 const router = express.Router();
 
+import util from 'util';
+import crypto from 'crypto';
+import qrcode from 'qrcode';
+import base32Encode from 'base32-encode';
+import { verifyTOTP } from '../models/2fa';
+
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const saltrounds = 10;
@@ -22,21 +28,108 @@ const checkToken = (req, res, next) => {
 
         req.user = payload;
 
+        if (payload.auth === false) {
+            let err = new Error('Invalid token');
+            err.status = 403;
+            return next(err);
+        }
+
         next();
     });
 };
 
-
 const createUser = async (id, key) => {
     return new Promise((resolve) => {
         bcrypt.hash(key, saltrounds, (err, hash) => {
-            Database.collection('users').insertOne({ id: sha256(id), key: hash }, {new: true}, (err, response) => {
+            Database.collection('users').insertOne({ id: sha256(id), key: hash, auth: false, authKey: null }, {new: true}, (err, response) => {
                 const user = response.ops[0];
                 resolve(user);
             });
         });
     });
 };
+
+router.post('/2faqrc', async (req, res, next) => {
+    const token = req.headers['x-access-token'];
+
+    jwt.verify(token, jwtSecret, async (err, payload) => {
+        if (err) {
+            let err = new Error('Invalid token');
+            err.status = 403;
+            return next(err);
+        }
+
+        if (await Database.collection('users').findOne({ id: sha256(payload.id) }).auth) {
+            let err = new Error('Invalid token');
+            err.status = 403;
+            return next(err);
+        }
+
+        if (payload.first === true) {
+            const buffer = await util.promisify (crypto.randomBytes)(14);
+            const secret = base32Encode(buffer, 'RFC4648', { padding: false });
+            await Database.collection('users').updateOne({ id: sha256(payload.id) }, {
+                $set: {
+                    authKey: secret
+                }
+            }, {});
+
+            const issuer = 'Storage';
+            const algorithm = 'SHA1';
+            const digits = '6';
+            const period = '30';
+            const otpType = 'totp';
+            const config = `otpauth://${otpType}/${issuer}:${payload.id}?algorithm=${algorithm}&digits=${digits}&period=${period}&issuer=${issuer}&secret=${secret}`;
+
+            res.setHeader('Content-Type', 'image/png');
+            qrcode.toFileStream(res, config);
+        } else {
+            if (err) {
+                let err = new Error('Invalid token');
+                err.status = 403;
+                return next(err);
+            }
+        }
+    });
+});
+
+router.post('/2fa', async (req, res, next) => {
+    const token = req.headers['x-access-token'];
+    const authKey = req.body.authKey;
+
+    jwt.verify(token, jwtSecret, async (err, payload) => {
+        if (err) {
+            let err = new Error('Invalid token');
+            err.status = 403;
+            return next(err);
+        }
+
+        const user = await Database.collection('users').findOne({ id: sha256(payload.id) });
+        console.log(user);
+        console.log(authKey, user.authKey);
+        if (verifyTOTP(authKey, user.authKey)) {
+            const newPayload = { id: payload.id, key: payload.key, first: false, auth: true };
+            const newToken = jwt.sign(newPayload, jwtSecret, { expiresIn: '24h' });
+
+            await Database.collection('users').updateOne({ id: sha256(payload.id) }, {
+                $set: {
+                    auth: true
+                }
+            }, {});
+
+            return res.status(200).json({
+                data: {
+                    message: 'Successfully authorized',
+                    token: newToken
+                }
+            });
+        }
+
+        err = new Error('Invalid token');
+        err.status = 403;
+        return next(err);
+    });
+});
 
 // All routes requiring valid jwt
 router.use('/storage', checkToken);
@@ -61,25 +154,31 @@ router.post('/authorize', (req, res, next) => {
         if (err)
             return next(new Error('Database error'));
 
-        if (!user)
+        let newUser = !user;
+        if (newUser)
             user = await createUser(id, key);
 
         bcrypt.compare(key, user.key, (_, result) => {
             if (result) {
-                const payload = { id: id, key: key };
+                // TODO: Check if user haven't added 2fa yet
+                const payload = { id: id, key: key, first: newUser || user.authKey === null || user.auth === false, auth: false };
                 const token = jwt.sign(payload, jwtSecret, { expiresIn: '24h' });
 
                 return res.status(200).json({
                     data: {
-                        message: 'Successfully authorized',
                         token: token
                     }
                 });
             }
 
-            let err = new Error("Invalid key");
-            err.status = 401;
-            return next(err);
+            const payload = { id: id, key: key, first: false, auth: false };
+            const token = jwt.sign(payload, jwtSecret, { expiresIn: '24h' });
+
+            return res.status(200).json({
+                data: {
+                    token: token
+                }
+            });
         });
     });
 });
