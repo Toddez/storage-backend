@@ -108,6 +108,7 @@ router.post('/2fa', async (req, res, next) => {
         if (verifyTOTP(authKey, user.authKey)) {
             const newPayload = { id: payload.id, key: payload.key, first: false, auth: true };
             const newToken = jwt.sign(newPayload, jwtSecret, { expiresIn: '24h' });
+            req.session.token = newToken;
 
             await Database.collection('users').updateOne({ id: sha256(payload.id) }, {
                 $set: {
@@ -131,6 +132,43 @@ router.post('/2fa', async (req, res, next) => {
 
 // All routes requiring valid jwt
 router.use('/storage', checkToken);
+
+router.post('/logout', (req, res) => {
+    delete req.session.token;
+
+    return res.status(200).json({
+        data: {
+            message: 'Logged out'
+        }
+    });
+});
+
+router.post('/checkup', (req, res, next) => {
+    if (!req.session.token) {
+        return res.status(200).json({
+            data: {
+                token: null
+            }
+        });
+    }
+
+    jwt.verify(req.session.token, jwtSecret, (err, payload) => {
+        if (err) {
+            let err = new Error('Invalid token');
+            err.status = 403;
+            return next(err);
+        }
+
+        req.user = payload;
+
+        return res.status(200).json({
+            data: {
+                token: req.session.token,
+                auth: req.user.auth
+            }
+        });
+    });
+});
 
 router.post('/authorize', (req, res, next) => {
     const id = req.body.id;
@@ -158,9 +196,9 @@ router.post('/authorize', (req, res, next) => {
 
         bcrypt.compare(key, user.key, (_, result) => {
             if (result) {
-                // TODO: Check if user haven't added 2fa yet
                 const payload = { id: id, key: key, first: newUser || user.authKey === null || user.auth === false, auth: false };
                 const token = jwt.sign(payload, jwtSecret, { expiresIn: '24h' });
+                req.session.token = token;
 
                 return res.status(200).json({
                     data: {
@@ -171,6 +209,7 @@ router.post('/authorize', (req, res, next) => {
 
             const payload = { id: id, key: key, first: false, auth: false };
             const token = jwt.sign(payload, jwtSecret, { expiresIn: '24h' });
+            req.session.token = token;
 
             return res.status(200).json({
                 data: {
