@@ -105,8 +105,6 @@ router.post('/2fa', async (req, res, next) => {
         }
 
         const user = await Database.collection('users').findOne({ id: sha256(payload.id) });
-        console.log(user);
-        console.log(authKey, user.authKey);
         if (verifyTOTP(authKey, user.authKey)) {
             const newPayload = { id: payload.id, key: payload.key, first: false, auth: true };
             const newToken = jwt.sign(newPayload, jwtSecret, { expiresIn: '24h' });
