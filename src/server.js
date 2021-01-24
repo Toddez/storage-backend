@@ -2,6 +2,7 @@ import Database from './db';
 Database.connect();
 
 const express = require('express');
+const session = require('express-session');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
@@ -11,7 +12,28 @@ const app = express();
 
 const port = process.env.HTTP_PORT || 1337;
 
-app.use(cors());
+const sessionConfig = {
+    secret: process.env.SESSION_SECRET || 'secret session',
+    cookie: {
+        maxAge: 5 * 60 * 1000,
+        secure: false
+    },
+    resave: true,
+    saveUninitialized: true,
+    httpOnly: true,
+    unset: 'destroy'
+};
+
+if (app.get('env') === 'production') {
+    app.set('trust proxy', 1);
+    sessionConfig.cookie.secure = true;
+}
+
+// Use Session
+// TODO: Look into CSRF mitigation
+app.use(session(sessionConfig));
+
+app.use(cors({origin: 'http://localhost:3000', credentials: true}));
 
 // Bodyparser
 app.use(bodyParser.json()); // application/json
