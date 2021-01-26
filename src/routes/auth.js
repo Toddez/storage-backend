@@ -79,7 +79,7 @@ router.post('/2faqrc', async (req, res, next) => {
             const digits = '6';
             const period = '30';
             const otpType = 'totp';
-            const config = `otpauth://${otpType}/${issuer}:${payload.id}?algorithm=${algorithm}&digits=${digits}&period=${period}&issuer=${issuer}&secret=${secret}`;
+            const config = `otpauth://${otpType}/${issuer}?algorithm=${algorithm}&digits=${digits}&period=${period}&issuer=${issuer}&secret=${secret}`;
 
             res.setHeader('Content-Type', 'image/png');
             qrcode.toFileStream(res, config);
