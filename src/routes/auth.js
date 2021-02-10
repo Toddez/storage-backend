@@ -110,18 +110,22 @@ router.post('/2fa', async (req, res, next) => {
             const newToken = jwt.sign(newPayload, jwtSecret, { expiresIn: '24h' });
             req.session.token = newToken;
 
-            await Database.collection('users').updateOne({ id: sha256(payload.id) }, {
-                $set: {
-                    auth: true
-                }
-            }, {});
+            const result = await bcrypt.compare(payload.key, user.key);
 
-            return res.status(200).json({
-                data: {
-                    message: 'Successfully authorized',
-                    token: newToken
-                }
-            });
+            if (result) {
+                await Database.collection('users').updateOne({ id: sha256(payload.id) }, {
+                    $set: {
+                        auth: true
+                    }
+                }, {});
+
+                return res.status(200).json({
+                    data: {
+                        message: 'Successfully authorized',
+                        token: newToken
+                    }
+                });
+            }
         }
 
         err = new Error('Invalid token');
