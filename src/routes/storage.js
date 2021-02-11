@@ -5,7 +5,7 @@ const fetch = require('node-fetch');
 
 import { Storage, NodeType, getExtension, identify } from '../models/storage';
 
-router.get('/', (req, res) => {
+router.post('/', (req, res) => {
     const user = req.user;
     const id = user.id;
     const key = user.key;
@@ -18,9 +18,9 @@ router.get('/', (req, res) => {
     });
 });
 
-router.get('/read/*', async (req, res) => {
+router.post('/read', async (req, res) => {
     const user = req.user;
-    const localPath = req.params[0];
+    const localPath = req.body.localPath;
     const id = user.id;
     const key = user.key;
 
@@ -49,9 +49,9 @@ router.get('/read/*', async (req, res) => {
     });
 });
 
-router.post('/write/*', async (req, res, next) => {
+router.post('/write', async (req, res, next) => {
     const user = req.user;
-    const localPath = req.params[0];
+    const localPath = req.body.localPath;
     const type =  req.body.type;
     const data = req.body.data;
     const id = user.id;
@@ -82,9 +82,9 @@ router.post('/write/*', async (req, res, next) => {
 const multer = require('multer');
 const upload = multer();
 
-router.post('/upload/*', upload.array('files'), async (req, res, next) => {
+router.post('/upload', upload.array('files'), async (req, res, next) => {
     const user = req.user;
-    const localPath = req.params[0];
+    const localPath = req.headers['local-path'];
     const files = req.files;
     const id = user.id;
     const key = user.key;
@@ -103,9 +103,9 @@ router.post('/upload/*', upload.array('files'), async (req, res, next) => {
     });
 });
 
-router.post('/uploadFromURL/*', async (req, res, next) => {
+router.post('/uploadFromURL', async (req, res, next) => {
     const user = req.user;
-    const localPath = req.params[0];
+    const localPath = req.body.localPath;
     const url = req.body.url;
     const id = user.id;
     const key = user.key;
@@ -127,9 +127,9 @@ router.post('/uploadFromURL/*', async (req, res, next) => {
     });
 });
 
-router.post('/delete/*', async (req, res) => {
+router.post('/delete', async (req, res) => {
     const user = req.user;
-    const localPath = req.params[0];
+    const localPath = req.body.localPath;
     const id = user.id;
     const key = user.key;
 
@@ -141,9 +141,9 @@ router.post('/delete/*', async (req, res) => {
     });
 });
 
-router.post('/rename/*', async (req, res) => {
+router.post('/rename', async (req, res) => {
     const user = req.user;
-    const localPath = req.params[0];
+    const localPath = req.body.localPath;
     const id = user.id;
     const key = user.key;
     const name = req.body.name;
