@@ -29,6 +29,16 @@ if (app.get('env') === 'production') {
     sessionConfig.cookie.secure = true;
 }
 
+// Restrict to only one IP address if configured
+if (process.env.ALLOWED_IP) {
+    app.use('*', (req, res, next) => {
+        if (process.env.ALLOWED_IP !== req.socket.remoteAddress)
+            next('Access denied.');
+        else
+            next();
+    });
+}
+
 // Use Session
 // TODO: Look into CSRF mitigation
 app.use(session(sessionConfig));

@@ -29,6 +29,9 @@ MONGODB_NAME = name-of-mongodb-database
 CORS_ORIGIN = ["url0", "url1] OR url
 ```
 
+``ALLOWED_IP = some-ip``  
+Can be configured to only allow access from a specific IP
+
 ## Features
 - ### Authentication using:
   - Private id - used to identify user
