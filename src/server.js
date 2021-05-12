@@ -33,7 +33,17 @@ if (app.get('env') === 'production') {
 // TODO: Look into CSRF mitigation
 app.use(session(sessionConfig));
 
-app.use(cors({origin: 'http://localhost:3000', credentials: true}));
+let origin;
+try {
+    origin = JSON.parse(`${process.env.CORS_ORIGIN}`);
+} catch {
+    origin = process.env.CORS_ORIGIN;
+}
+
+app.use(cors({
+    origin: origin,
+    credentials: true
+}));
 
 // Bodyparser
 app.use(bodyParser.json()); // application/json
@@ -76,6 +86,7 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(port, () => {
+    console.log(`CORS (${Array.isArray(origin) ? origin.length : 1}): ${origin}`);
     console.log(`API listening on port ${port}`);
 });
 
