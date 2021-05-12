@@ -42,6 +42,7 @@ const Extensions = {
     [NodeType.JPG]: ['jpg', 'jpeg'],
     [NodeType.GIF]: ['gif'],
     [NodeType.MP4]: ['mp4'],
+    [NodeType.VIDEO]: ['webm'],
     [NodeType.WMV]: ['wmv'],
     [NodeType.BINARY]: [''],
 };
