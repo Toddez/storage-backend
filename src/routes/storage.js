@@ -141,12 +141,18 @@ router.post('/delete', async (req, res) => {
     });
 });
 
-router.post('/rename', async (req, res) => {
+router.post('/rename', async (req, res, next) => {
     const user = req.user;
     const localPath = req.body.localPath;
     const id = user.id;
     const key = user.key;
     const name = req.body.name;
+
+    if (!localPath || !name) {
+        let err = new Error('Could not rename file');
+        err.status = 400;
+        return next(err);
+    }
 
     const storage = new Storage(id, key);
     const renamed = storage.rename(localPath, name);
