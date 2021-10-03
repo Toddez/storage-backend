@@ -46,7 +46,7 @@ app.use(session(sessionConfig));
 let origin;
 try {
     origin = JSON.parse(`${process.env.CORS_ORIGIN}`);
-} catch {
+} catch(_) {
     origin = process.env.CORS_ORIGIN;
 }
 
