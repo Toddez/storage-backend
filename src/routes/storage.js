@@ -103,6 +103,15 @@ router.post('/upload', upload.array('files'), async (req, res, next) => {
     });
 });
 
+let retryFetch = async (url, t) => {
+    try {
+        return await fetch(url);
+    } catch(_) {
+        await new Promise(resolve => setTimeout(resolve, t * 1000));
+        return await retryFetch(url, t + 1);
+    }
+};
+
 router.post('/uploadFromURL', async (req, res, next) => {
     const user = req.user;
     const localPath = req.body.localPath;
@@ -112,7 +121,7 @@ router.post('/uploadFromURL', async (req, res, next) => {
 
     const storage = new Storage(id, key);
 
-    const fileRes = await fetch(url);
+    const fileRes = await retryFetch(url, 1);
     const data = await fileRes.buffer();
     const fileName = url.split('/').pop();
 
