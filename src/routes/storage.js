@@ -121,15 +121,22 @@ router.post('/uploadFromURL', async (req, res, next) => {
 
     const storage = new Storage(id, key);
 
-    const fileRes = await retryFetch(url, 1);
-    const data = await fileRes.buffer();
     const fileName = url.split('/').pop();
 
-    let err = new Error('Could not write file');
-    err.status = 400;
-
-    if (!storage.writeFile(`${localPath}${localPath !== '' ? '/' : ''}${fileName}`, data))
+    if (storage.readFile(`${localPath}${localPath !== '' ? '/' : ''}${fileName}`) !== '') {
+        let err = new Error('File already exists');
+        err.status = 400;
         return next(err);
+    }
+
+    const fileRes = await retryFetch(url, 1);
+    const data = await fileRes.buffer();
+
+    if (!storage.writeFile(`${localPath}${localPath !== '' ? '/' : ''}${fileName}`, data)) {
+        let err = new Error('Could not write file');
+        err.status = 400;
+        return next(err);
+    }
 
     return res.status(201).json({
         path: localPath
