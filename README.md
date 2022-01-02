@@ -26,7 +26,7 @@ HASH_SALT = secret-salt-for-hashing
 SESSION_SECRET = secret-session-key
 MONGODB_URL = url-for-mongodb-database
 MONGODB_NAME = name-of-mongodb-database
-CORS_ORIGIN = ["url0", "url1] OR url
+CORS_ORIGIN = ["url0", "url1"] OR url
 ```
 
 ``ALLOWED_IP = some-ip``  
