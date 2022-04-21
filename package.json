@@ -1,45 +1,45 @@
 {
-    "name": "storage-backend",
-    "version": "1.0.0",
-    "description": "",
-    "main": "server.js",
-    "scripts": {
-        "watch": "webpack --watch & nodemon dist/bundle.js --exec \"npm run lint && npm run start\"",
-        "start": "node dist/bundle.js",
-        "build": "PRODUCTION=1 webpack",
-        "test": "exit 0",
-        "posttest": "npm run lint",
-        "lint": "eslint ."
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/Toddez/storage-backend.git"
-    },
-    "author": "Toddez",
-    "license": "ISC",
-    "bugs": {
-        "url": "https://github.com/Toddez/storage-backend/issues"
-    },
-    "homepage": "https://github.com/Toddez/storage-backend#readme",
-    "devDependencies": {
-        "eslint": "^7.13.0",
-        "nodemon": "^2.0.6",
-        "webpack": "^5.4.0",
-        "webpack-cli": "^4.2.0",
-        "webpack-node-externals": "^2.5.2"
-    },
-    "dependencies": {
-        "base32-decode": "^1.0.0",
-        "base32-encode": "^1.1.1",
-        "bcryptjs": "^2.4.3",
-        "cors": "^2.8.5",
-        "dotenv": "^8.2.0",
-        "express": "^4.17.1",
-        "express-session": "^1.17.1",
-        "jsonwebtoken": "^8.5.1",
-        "mongodb": "^3.6.3",
-        "multer": "^1.4.2",
-        "node-fetch": "^2.6.1",
-        "qrcode": "^1.4.4"
-    }
+  "name": "storage-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "watch": "webpack --watch & nodemon dist/bundle.js --exec \"npm run lint && npm run start\"",
+    "start": "node dist/bundle.js",
+    "build": "PRODUCTION=1 webpack",
+    "test": "exit 0",
+    "posttest": "npm run lint",
+    "lint": "eslint ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Toddez/storage-backend.git"
+  },
+  "author": "Toddez",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Toddez/storage-backend/issues"
+  },
+  "homepage": "https://github.com/Toddez/storage-backend#readme",
+  "devDependencies": {
+    "eslint": "^7.13.0",
+    "nodemon": "^2.0.6",
+    "webpack": "^5.4.0",
+    "webpack-cli": "^4.2.0",
+    "webpack-node-externals": "^2.5.2"
+  },
+  "dependencies": {
+    "base32-decode": "^1.0.0",
+    "base32-encode": "^1.1.1",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "express-session": "^1.17.1",
+    "jsonwebtoken": "^8.5.1",
+    "mongodb": "^3.6.3",
+    "multer": "^1.4.2",
+    "node-fetch": "^2.6.1",
+    "qrcode": "^1.4.4"
+  }
 }
